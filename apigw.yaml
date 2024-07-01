@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  MyAPIGateway:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub 'MyAPIGateway-${AWS::Region}'
+      Description: My API Gateway
+      BinaryMediaTypes:
+        - 'application/octet-stream'
+      MinimumCompressionSize: 0
+
+  MyAPIResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref MyAPIGateway
+      ParentId: !GetAtt MyAPIGateway.RootResourceId
+      PathPart: 'myresource'
+
+  MyAPIMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref MyAPIGateway
+      ResourceId: !Ref MyAPIResource
+      HttpMethod: 'GET'
+      Authorization: 'NONE'
+      Integration:
+        Type: 'HTTP'
+        IntegrationHttpMethod: 'POST'
+        Uri: 'https://example.com/myendpoint' # replace with your actual endpoint
+        RequestTemplates:
+          application/json: '{"message": "Hello, World!"}'
+
+  MyAPIDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    DependsOn: MyAPIMethod
+    Properties:
+      RestApiId: !Ref MyAPIGateway
+      Description: 'My API Deployment'
+
+  MyAPIStage:
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      RestApiId: !Ref MyAPIGateway
+      StageName: 'prod'
+      DeploymentId: !Ref MyAPIDeployment
+
+Outputs:
+  ApiGatewayURL:
+    Value: !Sub 'https://${MyAPIGateway}.execute-api.${AWS::Region}.amazonaws.com/prod'
+    Description: The URL of the API Gateway
